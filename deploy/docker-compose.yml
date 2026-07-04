@@ -1,0 +1,77 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: mytools-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: my_tools
+      POSTGRES_USER: my_tools_user
+      POSTGRES_PASSWORD: change_me_to_strong_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U my_tools_user -d my_tools"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: mytools-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ""
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ../deploy/Dockerfile.backend
+    container_name: mytools-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: my_tools
+      DB_USER: my_tools_user
+      DB_PASSWORD: change_me_to_strong_password
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET_KEY: change_me_to_a_very_long_random_secret_key_for_jwt_signing_production
+      DB_CIPHER_KEY: change_me_to_32byte_base64_encryption_key_production
+      CORS_ORIGINS: "*"
+    ports:
+      - "1112:8000"
+    volumes:
+      - ./backend/logs:/app/logs
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../deploy/Dockerfile.frontend
+    container_name: mytools-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+volumes:
+  postgres_data:
+  redis_data:

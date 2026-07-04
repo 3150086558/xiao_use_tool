@@ -1,354 +1,302 @@
-# 小肖的自用工具 - 网页版多功能工具箱
+# 小肖的自用工具 v2.0
 
-一个轻量级网页版个人工具箱，集成记账管理、待办事项、备忘录、数据库查询、用户管理等功能。适合：
-
-1. Windows 电脑本地运行；
-2. Linux 服务器部署；
-3. Docker 部署；
-4. 使用 SQLite / PostgreSQL / MySQL 存储数据。
+基于 **Python + FastAPI + Vue 3 + PostgreSQL + Redis** 重构的网页版多功能工具箱。
 
 ---
 
 ## 一、技术栈
 
-### 前端
-
-- HTML5 + CSS3 + 原生 JavaScript
-- 响应式布局，手机浏览器可以直接访问
-- 不依赖 Vue / React，部署简单
-
 ### 后端
+- **FastAPI** - 现代异步 Web 框架，自动生成 OpenAPI 文档
+- **SQLAlchemy 2.0** - ORM
+- **Alembic** - 数据库迁移
+- **PostgreSQL** - 主数据库
+- **Redis** - 缓存、JWT 黑名单、限流
+- **JWT (access + refresh)** - 认证
+- **bcrypt** - 密码哈希
+- **Celery** - 异步任务队列
+- **openpyxl** - Excel 导入导出
+- **loguru** - 日志
+- **pytest** - 单元测试
 
-- Python 3
-- Python 标准库 HTTP Server
-- REST API 接口
-- 支持 CSV / Excel 导入导出
+### 前端
+- **Vue 3 + TypeScript** - 组合式 API + 类型安全
+- **Vite** - 构建工具
+- **Element Plus** - UI 组件库
+- **Pinia** - 状态管理
+- **Vue Router 4** - 路由
+- **Axios** - HTTP 客户端
+- **ECharts 5** - 图表可视化
+- **NProgress** - 路由进度条
+- **xlsx (SheetJS)** - 前端 Excel 导出
 
-### 数据库
-
-- SQLite：默认，无需单独安装，数据存在 `data/accounting.db`
-- PostgreSQL：适合正式服务器部署
-- MySQL：适合正式服务器部署
-
-### 打包 / 部署
-
-- Windows：`run_windows.bat` 一键运行
-- Linux：`install_ubuntu_env.sh` 安装环境，`run_server.sh` 启动
-- Docker：Dockerfile 已提供
-- Windows exe：`build_windows_exe.bat`
+### 部署
+- Docker Compose（PostgreSQL + Redis + Backend + Frontend/Nginx）
+- Nginx 反向代理 + 静态资源缓存 + 接口限流
 
 ---
 
 ## 二、功能模块
 
 ### 财务管理
-
-- **记账**：新增、编辑、删除账单，支持收入/支出分类
-  - 按月份、类型、关键词筛选
-  - 自动统计收入、支出、结余
-  - 分类汇总
-  - 导入 Excel（含进度条，防重复导入）
-  - 导出 Excel / CSV
-  - 删除全部数据
-- **统计报表**：按月/分类/类型可视化统计
+- 记账（新增、编辑、删除、清空全部）
+- 多条件筛选（月份、类型、关键词）
+- 分页查询
+- 收入/支出/结余统计卡片
+- 分类汇总
+- Excel 导入（含模板下载、防重复、错误提示）
+- Excel / CSV 导出
+- **统计报表（ECharts 可视化）**
+  - 月度收支趋势折线图
+  - 分类占比饼图
+  - 分类 TOP 排行柱状图
 
 ### 日常工具
-
-- **待办事项**：增删改查，支持完成状态切换
-- **备忘录**：增删改查，支持搜索
-- **数据库查询**：连接外部 MySQL / PostgreSQL 数据库
-  - 配置数据库连接（主机、端口、用户名、密码、数据库名）
+- 待办事项（增删改查、完成切换、优先级）
+- 备忘录（增删改查、搜索）
+- 数据库查询工具
+  - 连接配置管理（加密存储密码）
+  - 支持 PostgreSQL / MySQL / SQLite
   - 测试连接
-  - 获取并浏览表列表
-  - 查看表结构（列名、类型、是否可空、默认值）
-  - 执行 SQL 查询（SELECT / SHOW / DESCRIBE / EXPLAIN）
+  - 获取表列表
+  - 查看表结构
+  - 执行查询（仅允许 SELECT 类语句）
 
-### 系统管理（仅管理员）
-
-- **用户管理**：
-  - 查看所有用户列表（含记账/待办/备忘录条数统计）
-  - 重置用户密码
-  - 删除用户（连同所有关联数据）
+### 系统管理（管理员）
+- 用户列表（含记账/待办/备忘录数量统计）
+- 重置用户密码
+- 删除用户（连同所有关联数据）
 
 ### 通用功能
-
-- 多用户支持，注册/登录/退出
+- 多用户注册 / 登录 / 退出
 - 修改密码
-- 左侧菜单导航，动态菜单树
-- 手机端自适应布局
+- 动态菜单树
+- 响应式布局
+- JWT 自动刷新
+- 密码强度可视化
 
 ---
 
-## 三、页面结构
+## 三、项目结构
 
-```text
-├── 登录页 / 注册页
-├── 首页（概览仪表盘）
-├── 记账页
-│   ├── 顶部：收入/支出/结余统计卡片
-│   ├── 中间：新增账单表单
-│   ├── 筛选条件（月份、收入/支出、关键词）
-│   ├── 账单列表（支持编辑、删除）
-│   └── 底部：分类汇总 + 导入/导出/删除全部按钮
-├── 统计报表页
-├── 待办事项页
-├── 备忘录页
-├── 数据库查询页
-│   ├── 连接配置表单
-│   ├── 表列表（可点击查看结构）
-│   ├── 表结构展示
-│   └── SQL 查询编辑器 + 结果表格
-└── 用户管理页（仅管理员可见）
+```
+my_project_python/
+├── backend/                         # 后端 FastAPI
+│   ├── app/
+│   │   ├── main.py                  # FastAPI 入口
+│   │   ├── config.py                # 配置（pydantic-settings）
+│   │   ├── database.py              # SQLAlchemy 引擎/会话
+│   │   ├── redis_client.py          # Redis 连接
+│   │   ├── deps.py                  # 依赖注入
+│   │   ├── security.py              # JWT、bcrypt
+│   │   ├── models/                  # SQLAlchemy ORM 模型
+│   │   ├── schemas/                 # Pydantic 请求/响应模型
+│   │   ├── api/                     # API 路由
+│   │   ├── services/                # 业务逻辑层
+│   │   └── utils/                   # 工具函数
+│   ├── alembic/                     # 数据库迁移
+│   ├── scripts/                     # 脚本（数据迁移等）
+│   ├── tests/                       # pytest 测试
+│   ├── requirements.txt
+│   ├── .env.example
+│   ├── run_windows.bat
+│   └── run_server.sh
+├── frontend/                        # 前端 Vue 3
+│   ├── src/
+│   │   ├── api/                     # axios 封装 + 接口
+│   │   ├── router/                  # 路由
+│   │   ├── stores/                  # Pinia
+│   │   ├── layouts/                 # 布局组件
+│   │   ├── views/                   # 页面
+│   │   ├── components/              # 通用组件
+│   │   ├── types/                   # TS 类型
+│   │   ├── utils/                   # 工具函数
+│   │   └── assets/styles/           # 全局样式
+│   ├── package.json
+│   ├── vite.config.ts
+│   ├── tsconfig.json
+│   └── run_windows.bat
+├── deploy/                          # 部署配置
+│   ├── docker-compose.yml
+│   ├── Dockerfile.backend
+│   ├── Dockerfile.frontend
+│   └── nginx.conf
+├── test_data/                       # 测试数据（旧版保留）
+├── data/                            # SQLite 数据（迁移用）
+├── backup/                          # 旧版代码归档
+├── .gitignore
+└── README.md
 ```
 
 ---
 
-## 四、目录说明
+## 四、快速开始
 
-```text
-my_project/
-├── app.py                  后端服务入口（Python）
-├── public/
-│   ├── index.html          前端主页面
-│   ├── login.html          登录/注册页面
-│   ├── style.css           页面样式
-│   └── app.js              前端交互逻辑
-├── data/
-│   └── accounting.db       SQLite 数据库文件，首次运行自动生成
-├── test_data/              测试文件目录（非核心代码）
-├── requirements.txt        Python 依赖（psycopg2-binary, PyMySQL, pyinstaller）
-├── .env.example            环境变量配置模板
-├── install_ubuntu_env.sh   Ubuntu/Linux 环境安装脚本
-├── run_server.sh           Linux 启动脚本
-├── run_windows.bat          Windows 启动脚本
-├── Dockerfile              Docker 部署文件
-├── setup_postgres.sql      PostgreSQL 初始化参考脚本
-├── setup_mysql.sql         MySQL 初始化参考脚本
-└── build_windows_exe.bat   Windows exe 打包脚本
-```
-
----
-
-## 五、启动与关闭
-
-### 方式一：双击脚本（推荐）
-
-- **Windows**：双击 `run_windows.bat` 启动，关闭命令行窗口即可关闭服务
-- **Linux**：`./run_server.sh` 启动，按 `Ctrl + C` 关闭
-
-### 方式二：命令行手动启动
+### 方式一：Docker Compose 一键启动
 
 ```bash
-# 进入项目目录
-cd my_project
-
-# 启动服务
-python app.py
+cd deploy
+docker-compose up -d
 ```
 
-启动后浏览器打开：`http://127.0.0.1:8000`
+访问：`http://localhost`
 
-### 方式三：后台运行（Linux/Mac）
+默认管理员账号：第一个注册的用户自动成为 admin
 
+### 方式二：本地开发
+
+#### 1. 启动 PostgreSQL 和 Redis
 ```bash
-# 后台启动，日志写入 app.log
-nohup python app.py > app.log 2>&1 &
-
-# 查看进程
-ps aux | grep app.py
-
-# 关闭服务（按 PID 结束）
-kill <PID>
+cd deploy
+docker-compose up -d postgres redis
 ```
 
-### 关闭服务
-
-| 方式 | 操作 |
-|------|------|
-| 命令行窗口 | 直接关闭窗口，或按 `Ctrl + C` |
-| 后台进程 | `kill <Python进程PID>` |
-| Windows PowerShell | `Get-Process python \| Stop-Process -Force` |
-
----
-
-## 六、Windows 电脑运行
-
-### 1. 安装环境
-
-Windows 电脑需要先安装 Python 3.10 或以上版本，安装时记得勾选 `Add Python to PATH`。
-
-### 2. 启动应用
-
-双击 `run_windows.bat`，它会自动创建虚拟环境、安装依赖、启动服务。
-
-启动后浏览器打开：`http://127.0.0.1:8000`
-
-默认管理员账号：admin / Mkld@2026（首次注册时创建）
-
----
-
-## 七、Ubuntu / Linux 服务器部署
-
+#### 2. 启动后端
 ```bash
-# 上传代码到服务器
-cd /opt/my_project
+cd backend
+cp .env.example .env  # 按需修改配置
 
-# 安装环境
-chmod +x install_ubuntu_env.sh run_server.sh
-./install_ubuntu_env.sh
+# Windows
+run_windows.bat
 
-# 配置环境变量
-cp .env.example .env
-nano .env
-
-# 启动
+# Linux/Mac
 ./run_server.sh
 ```
 
-服务器本机访问：`http://127.0.0.1:8000`
-外部访问：`http://服务器IP:8000`（需安全组放行 TCP 8000）
+后端地址：`http://127.0.0.1:1112`
+API 文档：`http://127.0.0.1:1112/docs`
 
----
-
-## 八、数据库配置
-
-### SQLite（默认）
-
-无需额外安装，数据保存在 `data/accounting.db`。
-
-```env
-DB_TYPE=sqlite
-```
-
-### PostgreSQL
-
-```env
-DB_TYPE=postgres
-DB_HOST=127.0.0.1
-DB_PORT=5432
-DB_NAME=accounting
-DB_USER=accounting_user
-DB_PASSWORD=请改成强密码
-```
-
-### MySQL
-
-```env
-DB_TYPE=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_NAME=accounting
-DB_USER=accounting_user
-DB_PASSWORD=请改成强密码
-```
-
----
-
-## 九、Docker 部署
-
-### SQLite 模式
-
+#### 3. 初始化数据库
 ```bash
-docker build -t my-project .
-docker run -d --name my-project -p 8000:8000 -v $PWD/data:/app/data my-project
+cd backend
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+alembic upgrade head
 ```
 
-### PostgreSQL / MySQL 模式
-
+#### 4. 迁移旧 SQLite 数据（可选）
 ```bash
-docker run -d --name my-project -p 8000:8000 \
-  -e DB_TYPE=postgres \
-  -e DB_HOST=PostgreSQL地址 \
-  -e DB_PORT=5432 \
-  -e DB_NAME=accounting \
-  -e DB_USER=accounting_user \
-  -e DB_PASSWORD=密码 \
-  my-project
+python scripts/migrate_from_sqlite.py ../data/0701_my_project.db
+```
+> 迁移后所有用户密码重置为 `Mkld@2026`
+
+#### 5. 启动前端
+```bash
+cd frontend
+
+# Windows
+run_windows.bat
+
+# 或手动
+npm install
+npm run dev
 ```
 
----
-
-## 十、手机访问
-
-电脑运行后，手机和电脑连接同一 WiFi，手机浏览器打开 `http://电脑IP:8000` 即可。
+前端地址：`http://127.0.0.1:1111`
 
 ---
 
-## 十一、API 接口
+## 五、数据库表（7 张）
+
+| 表名 | 说明 |
+|---|---|
+| users | 用户表 |
+| records | 记账记录表 |
+| menus | 菜单表 |
+| todos | 待办事项表 |
+| notes | 备忘录表 |
+| db_connections | 数据库连接配置（密码加密存储） |
+| refresh_tokens | JWT 刷新令牌白名单 |
+
+---
+
+## 六、API 接口
+
+所有接口前缀：`/api/v1`
+
+### 认证
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| POST | /auth/register | 注册 |
+| POST | /auth/login | 登录 |
+| POST | /auth/logout | 退出 |
+| POST | /auth/refresh | 刷新 token |
+| POST | /auth/change-password | 修改密码 |
+| GET | /auth/me | 当前用户信息 |
 
 ### 记账
-
 | 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | /api/records | 查询账单列表 |
-| POST | /api/records | 新增账单 |
-| PUT | /api/records/{id} | 修改账单 |
-| DELETE | /api/records/{id} | 删除账单 |
-| DELETE | /api/clear-all | 删除全部账单 |
-| GET | /api/summary | 统计汇总 |
-| GET | /api/export.csv | 导出 CSV |
-| GET | /api/export.xlsx | 导出 Excel |
-| POST | /api/import | 导入 Excel |
+|---|---|---|
+| GET | /records | 分页查询 |
+| POST | /records | 新增 |
+| PUT | /records/{id} | 修改 |
+| DELETE | /records/{id} | 删除 |
+| DELETE | /records | 清空全部 |
+| GET | /records/summary | 汇总统计 |
+| GET | /records/stats | 报表数据（趋势/饼图） |
+| GET | /records/import-template | 下载导入模板 |
+| POST | /records/import | 导入 Excel |
+| GET | /records/export | 导出 Excel/CSV |
 
-### 待办事项
-
+### 待办 / 备忘录 / 菜单
 | 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | /api/todos | 查询待办列表 |
-| POST | /api/todos | 新增待办 |
-| PUT | /api/todos/{id} | 修改待办 |
-| DELETE | /api/todos/{id} | 删除待办 |
+|---|---|---|
+| GET/POST/PUT/DELETE | /todos[/{id}] | 待办事项 |
+| GET/POST/PUT/DELETE | /notes[/{id}] | 备忘录 |
+| GET | /menus | 菜单树 |
 
-### 备忘录
-
+### 用户管理（admin）
 | 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | /api/notes | 查询备忘录列表 |
-| POST | /api/notes | 新增备忘录 |
-| PUT | /api/notes/{id} | 修改备忘录 |
-| DELETE | /api/notes/{id} | 删除备忘录 |
+|---|---|---|
+| GET | /users | 用户列表 |
+| DELETE | /users/{id} | 删除用户 |
+| POST | /users/{id}/reset-password | 重置密码 |
 
 ### 数据库查询
-
 | 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | /api/db-query | 连接测试/获取表列表/查看表结构/执行SQL |
-
-### 用户管理
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | /api/users | 获取用户列表（仅admin） |
-| DELETE | /api/users/{id} | 删除用户（仅admin） |
-| PUT | /api/users/reset-password | 重置密码（仅admin） |
-
-### 通用
-
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | /api/login | 登录 |
-| POST | /api/register | 注册 |
-| POST | /api/change-password | 修改密码 |
-| POST | /api/logout | 退出 |
-| GET | /api/menus | 获取用户菜单 |
-| GET | /api/health | 健康检查 |
+|---|---|---|
+| GET/POST/PUT/DELETE | /db-query/connections[/{id}] | 连接配置管理 |
+| POST | /db-query/connect | 测试连接 |
+| POST | /db-query/tables | 获取表列表 |
+| POST | /db-query/schema | 查看表结构 |
+| POST | /db-query/query | 执行查询 |
 
 ---
 
-## 十二、数据表结构
+## 七、安全性升级
 
-应用启动时自动创建以下表：
-
-- `users` — 用户表
-- `records` — 记账记录表
-- `todos` — 待办事项表
-- `notes` — 备忘录表
-- `menus` — 用户菜单表
+| 项 | v1.0 | v2.0 |
+|---|---|---|
+| 密码哈希 | SHA256（无 salt） | bcrypt |
+| 会话 | 内存字典 | JWT（access+refresh） |
+| CSRF | Cookie 无 SameSite | Bearer Token（天然防护） |
+| DB 连接密码 | 明文存储 | AES-GCM 加密存储 |
+| Redis | 无 | 有（JWT 黑名单） |
+| Nginx 限流 | 无 | 有（60r/m） |
 
 ---
 
-## 十三、生产部署建议
+## 八、运行测试
 
-- 个人使用：SQLite + `run_windows.bat` 即可
-- 服务器部署：PostgreSQL/MySQL + Nginx + HTTPS
-- 最省事迁移：Docker + SQLite 数据目录挂载
+### 后端测试
+```bash
+cd backend
+source .venv/bin/activate
+pytest -v
+```
+
+---
+
+## 九、与 v1.x 的变化
+
+- 后端从 Python 标准库 `http.server` 升级为 FastAPI
+- 前端从原生 JS 升级为 Vue 3 + TypeScript + Element Plus
+- 数据库统一为 PostgreSQL（移除 SQLite/MySQL 多方言适配）
+- 新增 Redis 缓存层
+- 新增 ECharts 统计图表
+- 密码从 SHA256 升级为 bcrypt
+- 会话从内存改为 JWT
+- db_connections 表密码从明文改为加密存储
+- 新增分页功能
+- 新增自动刷新 token
+- 新增 Nginx 限流与静态资源缓存
+- 旧代码已归档到 `backup/` 目录
